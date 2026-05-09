@@ -14,10 +14,10 @@ Optional env vars for Reddit (skip if unavailable):
 import json
 import os
 import re
-import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
-from urllib.request import urlopen, Request
+
+import feedparser
 
 ADOBE_RSS_FEEDS = [
     "https://community.adobe.com/t5/acrobat-sign/bd-p/acrobat-sign/rss.board?interaction.style=forum",
@@ -82,22 +82,18 @@ def score_text(text: str) -> dict[str, int]:
 def scrape_adobe_rss(counts: dict) -> int:
     total = 0
     for feed_url in ADOBE_RSS_FEEDS:
-        try:
-            req = Request(feed_url, headers={"User-Agent": "acrobat-sign-scraper/1.0"})
-            with urlopen(req, timeout=15) as resp:
-                tree = ET.parse(resp)
-        except Exception as exc:
-            print(f"  [warn] RSS fetch failed for {feed_url}: {exc}")
+        feed = feedparser.parse(feed_url, agent="acrobat-sign-scraper/1.0")
+        if feed.bozo and not feed.entries:
+            print(f"  [warn] Could not parse feed: {feed_url} — {feed.bozo_exception}")
             continue
-
-        items = tree.findall(".//item")
-        for item in items:
-            title = item.findtext("title") or ""
-            desc = item.findtext("description") or ""
-            text = f"{title} {re.sub('<[^>]+>', '', desc)}"
+        for entry in feed.entries:
+            title = entry.get("title", "")
+            summary = re.sub('<[^>]+>', '', entry.get("summary", ""))
+            text = f"{title} {summary}"
             for theme_id, hits in score_text(text).items():
                 counts[theme_id] += hits
-        total += len(items)
+        total += len(feed.entries)
+        print(f"  Parsed {len(feed.entries)} entries from {feed_url}")
 
     return total
 
