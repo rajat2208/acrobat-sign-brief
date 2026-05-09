@@ -111,6 +111,7 @@ def scrape_adobe_rss(counts: dict) -> int:
         items = extract_items_regex(text)
         if not items:
             print(f"  [warn] No items found in {feed_url}")
+            print(f"  [debug] First 500 chars: {repr(text[:500])}")
             continue
 
         for title, body in items:
