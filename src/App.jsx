@@ -3,6 +3,7 @@ import themesData from './data/themes.json'
 import './App.css'
 
 const CUTS = { all: null, '24m': '2024-05', '12m': '2025-05', '6m': '2025-11' }
+// ls dates in themes.json reflect last confirmed signal date; filters use string comparison (YYYY-MM)
 const FILTERS = [
   { key: 'all', label: 'All time' },
   { key: '24m', label: 'Last 2 years' },
@@ -225,7 +226,7 @@ export default function App() {
     ? `${visibleThemes.length} themes`
     : visibleThemes.length
       ? `${visibleThemes.length} of ${themesData.length} themes in this window`
-      : 'No themes in this window — will populate once live scraper is connected'
+      : 'No themes verified within this window'
 
   return (
     <div className="w">
