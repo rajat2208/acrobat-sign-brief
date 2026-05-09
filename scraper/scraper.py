@@ -18,7 +18,6 @@ from collections import defaultdict
 from pathlib import Path
 from urllib.request import urlopen, Request
 
-import feedparser
 
 ADOBE_RSS_FEEDS = [
     "https://community.adobe.com/t5/acrobat-sign/bd-p/acrobat-sign/rss.board?interaction.style=forum",
@@ -80,42 +79,45 @@ def score_text(text: str) -> dict[str, int]:
     }
 
 
-def fetch_and_sanitize(url: str) -> bytes:
-    """Fetch raw feed bytes and strip characters that break XML parsers."""
+def fetch_raw(url: str) -> str:
     req = Request(url, headers={"User-Agent": "acrobat-sign-scraper/1.0"})
     with urlopen(req, timeout=20) as resp:
-        raw = resp.read()
-    # Replace bare & not part of a valid entity
-    raw = re.sub(rb'&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', rb'&amp;', raw)
-    # Strip control characters that are illegal in XML (keep tab, LF, CR)
-    raw = re.sub(rb'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', b'', raw)
-    return raw
+        return resp.read().decode("utf-8", errors="replace")
+
+
+def extract_items_regex(text: str) -> list[tuple[str, str]]:
+    """Pull (title, body) pairs from RSS/Atom XML using regex, bypassing the parser."""
+    items = []
+    for block in re.findall(r'<(?:item|entry)[^>]*>(.*?)</(?:item|entry)>', text, re.DOTALL):
+        def grab(tag: str) -> str:
+            # prefer CDATA, fall back to raw text
+            m = re.search(rf'<{tag}[^>]*><!\[CDATA\[(.*?)\]\]></{tag}>', block, re.DOTALL)
+            if not m:
+                m = re.search(rf'<{tag}[^>]*>(.*?)</{tag}>', block, re.DOTALL)
+            return re.sub(r'<[^>]+>', ' ', m.group(1)) if m else ''
+        items.append((grab('title'), grab('description') or grab('summary') or grab('content')))
+    return items
 
 
 def scrape_adobe_rss(counts: dict) -> int:
     total = 0
     for feed_url in ADOBE_RSS_FEEDS:
         try:
-            content = fetch_and_sanitize(feed_url)
+            text = fetch_raw(feed_url)
         except Exception as exc:
             print(f"  [warn] Fetch failed for {feed_url}: {exc}")
             continue
 
-        feed = feedparser.parse(content)
-        if not feed.entries:
-            print(f"  [warn] No entries parsed from {feed_url} (bozo={feed.bozo})")
-            if feed.bozo:
-                print(f"         Reason: {feed.bozo_exception}")
+        items = extract_items_regex(text)
+        if not items:
+            print(f"  [warn] No items found in {feed_url}")
             continue
 
-        for entry in feed.entries:
-            title = entry.get("title", "")
-            summary = re.sub('<[^>]+>', '', entry.get("summary", ""))
-            text = f"{title} {summary}"
-            for theme_id, hits in score_text(text).items():
+        for title, body in items:
+            for theme_id, hits in score_text(f"{title} {body}").items():
                 counts[theme_id] += hits
-        total += len(feed.entries)
-        print(f"  Parsed {len(feed.entries)} entries from {feed_url}")
+        total += len(items)
+        print(f"  Parsed {len(items)} items from {feed_url}")
 
     return total
 
