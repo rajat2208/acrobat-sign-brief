@@ -95,7 +95,7 @@ function Legend({ themes }) {
   return (
     <div className="legend">
       <div className="leg-n-note">
-        {hasReal ? `n = ${totalN.toLocaleString()} feedback items` : 'n = pending scraper — estimates shown'}
+        {hasReal ? `n = ${totalN.toLocaleString()} feedback items` : 'Proportions based on manual source review'}
       </div>
       {themes.map(t => {
         const pct = Math.round((t.vol / tot) * 100)
@@ -221,8 +221,6 @@ export default function App() {
     return cutoff ? themesData.filter(t => t.ls >= cutoff) : themesData
   }, [cur])
 
-  const hasEstimates = themesData.some(t => t.n === null)
-
   const fnote = cur === 'all'
     ? `${visibleThemes.length} themes`
     : visibleThemes.length
@@ -292,9 +290,7 @@ export default function App() {
         <DonutChart themes={visibleThemes} />
         <Legend themes={visibleThemes} />
       </div>
-      {hasEstimates && (
-        <div className="chart-disclaimer">⚠ Volume proportions are estimates based on source review frequency. To be replaced with scraper data.</div>
-      )}
+      <div className="chart-disclaimer">Volume proportions are estimates based on source review frequency.</div>
 
       <ThemeCards allThemes={themesData} visibleThemes={visibleThemes} />
 
@@ -325,7 +321,7 @@ export default function App() {
 
       <div className="fn">
         <div className="fnl">Methodology note</div>
-        <div className="fnt">All themes are sourced exclusively from Acrobat Sign feedback — not Acrobat or Adobe broadly. Volume proportions and signal scores are the author&apos;s estimates based on source review; they will be replaced with scraper-derived counts once the live data pipeline is connected. Date filter will fully populate once the scraper is active. Last manual research pass: September 2025.</div>
+        <div className="fnt">All themes are sourced exclusively from Acrobat Sign feedback — not Acrobat or Adobe broadly. Volume proportions and signal scores are the author&apos;s estimates based on manual source review across G2, Capterra, TrustRadius, Adobe Community, Reddit, and the iOS App Store. Last research pass: September 2025.</div>
       </div>
     </div>
   )
