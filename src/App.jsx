@@ -217,12 +217,9 @@ function PlanGrid({ allThemes }) {
 function SectionHeader({ num, title, desc }) {
   return (
     <div className="section-hdr">
-      <div className="section-hdr-left">
-        <div className="section-pill">Section {num}</div>
-        <div className="section-title">{title}</div>
-        {desc && <div className="section-desc">{desc}</div>}
-      </div>
-      <div className="section-big-num">0{num}</div>
+      <div className="section-pill">Section {num}</div>
+      <div className="section-title">{title}</div>
+      {desc && <div className="section-desc">{desc}</div>}
     </div>
   )
 }
