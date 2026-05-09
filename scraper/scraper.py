@@ -16,6 +16,7 @@ import os
 import re
 from collections import defaultdict
 from pathlib import Path
+from urllib.request import urlopen, Request
 
 import feedparser
 
@@ -79,13 +80,34 @@ def score_text(text: str) -> dict[str, int]:
     }
 
 
+def fetch_and_sanitize(url: str) -> bytes:
+    """Fetch raw feed bytes and strip characters that break XML parsers."""
+    req = Request(url, headers={"User-Agent": "acrobat-sign-scraper/1.0"})
+    with urlopen(req, timeout=20) as resp:
+        raw = resp.read()
+    # Replace bare & not part of a valid entity
+    raw = re.sub(rb'&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', rb'&amp;', raw)
+    # Strip control characters that are illegal in XML (keep tab, LF, CR)
+    raw = re.sub(rb'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', b'', raw)
+    return raw
+
+
 def scrape_adobe_rss(counts: dict) -> int:
     total = 0
     for feed_url in ADOBE_RSS_FEEDS:
-        feed = feedparser.parse(feed_url, agent="acrobat-sign-scraper/1.0")
-        if feed.bozo and not feed.entries:
-            print(f"  [warn] Could not parse feed: {feed_url} — {feed.bozo_exception}")
+        try:
+            content = fetch_and_sanitize(feed_url)
+        except Exception as exc:
+            print(f"  [warn] Fetch failed for {feed_url}: {exc}")
             continue
+
+        feed = feedparser.parse(content)
+        if not feed.entries:
+            print(f"  [warn] No entries parsed from {feed_url} (bozo={feed.bozo})")
+            if feed.bozo:
+                print(f"         Reason: {feed.bozo_exception}")
+            continue
+
         for entry in feed.entries:
             title = entry.get("title", "")
             summary = re.sub('<[^>]+>', '', entry.get("summary", ""))
