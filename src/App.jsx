@@ -262,27 +262,6 @@ export default function App() {
 
       <SectionHeader num={1} title="Customer pain landscape" desc="All feedback is sourced exclusively from Acrobat Sign — not Acrobat or Adobe broadly." />
 
-      <div className="src-box">
-        <div className="src-box-lbl">Source universe</div>
-        <div className="src-cats">
-          <div>
-            <div className="src-cat-lbl">Review platforms</div>
-            {[['#3B0F70','G2'],['#8C2981','Capterra'],['#C73E4C','TrustRadius'],['#E8692A','SoftwareAdvice'],['#F59033','Trustpilot'],['#F8C840','Gartner Peer Insights']].map(([c,l]) => (
-              <div key={l} className="src-item"><div className="src-dot" style={{ background: c }} />{l}</div>
-            ))}
-          </div>
-          <div>
-            <div className="src-cat-lbl">Community &amp; forums</div>
-            <div className="src-item"><div className="src-dot" style={{ background: '#3B0F70' }} />Adobe Community (Sign subforum)</div>
-            <div className="src-item"><div className="src-dot" style={{ background: '#8C2981' }} />Reddit (r/sysadmin, r/legaltech)</div>
-          </div>
-          <div>
-            <div className="src-cat-lbl">App stores</div>
-            <div className="src-item"><div className="src-dot" style={{ background: '#C73E4C' }} />iOS App Store</div>
-          </div>
-        </div>
-      </div>
-
       <div className="filter-row">
         <span className="filter-lbl">Feedback window:</span>
         {FILTERS.map(f => (
@@ -321,8 +300,10 @@ export default function App() {
       <PlanGrid allThemes={themesData} />
 
       <div className="fn">
-        <div className="fnl">Methodology note</div>
-        <div className="fnt">All themes are sourced exclusively from Acrobat Sign feedback — not Acrobat or Adobe broadly. Volume proportions and signal scores are the author&apos;s estimates based on manual source review across G2, Capterra, TrustRadius, Adobe Community, Reddit, and the iOS App Store. Last research pass: September 2025.</div>
+        <div className="fnl">Sources</div>
+        <div className="fnt">G2 · Capterra · TrustRadius · SoftwareAdvice · Trustpilot · Gartner Peer Insights · Adobe Community (Sign subforum) · Reddit (r/sysadmin, r/legaltech) · iOS App Store</div>
+        <div className="fnl" style={{ marginTop: '12px' }}>Methodology note</div>
+        <div className="fnt">All themes are sourced exclusively from Acrobat Sign feedback — not Acrobat or Adobe broadly. Volume proportions and signal scores are the author&apos;s estimates based on manual source review. Last research pass: September 2025.</div>
       </div>
     </div>
   )
