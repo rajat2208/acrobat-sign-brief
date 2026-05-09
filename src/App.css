@@ -44,10 +44,10 @@ body {
 .hdr-r strong { color: #000000; font-weight: 600; }
 
 .section-hdr { border-top: 2.5px solid #3B0F70; padding-top: 1.5rem; margin: 3rem 0 1.75rem; }
-.section-pill { display: inline-block; background: #3B0F70; color: #fff; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 5px 16px; border-radius: 20px; margin-bottom: 10px; }
-.section-title { font-size: 24px; font-weight: 600; color: #000; line-height: 1.2; margin-bottom: 6px; }
+.section-pill { display: inline-block; background: #3B0F70; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 6px 18px; border-radius: 20px; margin-bottom: 12px; }
+.section-title { font-size: 28px; font-weight: 600; color: #000; line-height: 1.2; margin-bottom: 8px; }
 .section-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
-@media (max-width: 600px) { .section-title { font-size: 20px; } }
+@media (max-width: 600px) { .section-pill { font-size: 13px; padding: 6px 18px; } .section-title { font-size: 24px; } }
 
 /* keep old classes for anything still referencing them */
 .eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #8C2981; font-weight: 500; margin-bottom: 4px; }
