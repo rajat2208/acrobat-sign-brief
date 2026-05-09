@@ -2,27 +2,23 @@
 Acrobat Sign feedback scraper.
 
 Sources:
-  - Adobe Community Sign subforum via RSS (no auth required)
-  - Reddit via PRAW (optional — skipped if env vars not set)
+  - Reddit public JSON API (no credentials required)
 
 Outputs src/data/themes.json with updated `vol` (% share) and `n` (raw count).
-
-Optional env vars for Reddit (skip if unavailable):
-  REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT
 """
 
 import json
 import os
 import re
+import time
 from collections import defaultdict
 from pathlib import Path
 from urllib.request import urlopen, Request
+from urllib.error import HTTPError
 
-
-ADOBE_RSS_FEEDS = [
-    "https://community.adobe.com/t5/acrobat-sign/bd-p/acrobat-sign/rss.board?interaction.style=forum",
-    "https://community.adobe.com/t5/acrobat-sign/bd-p/acrobat-sign/rss.board?interaction.style=qanda",
-]
+REDDIT_SUBREDDITS = ["sysadmin", "legaltech", "smallbusiness"]
+REDDIT_SEARCH_URL = "https://www.reddit.com/r/{sub}/search.json?q=acrobat+sign&restrict_sr=1&sort=new&limit=100"
+REDDIT_UA = "acrobat-sign-brief-scraper/1.0 (research tool)"
 
 THEME_KEYWORDS: dict[str, list[str]] = {
     "workflow": [
@@ -61,7 +57,7 @@ THEME_KEYWORDS: dict[str, list[str]] = {
 THEME_META = {
     "workflow":    {"title": "Workflow configuration complexity",    "desc": "Setting up multi-signer routing, conditional fields, and template logic is the most-cited pain point across all sources. Enterprise admins struggle to create reusable templates, and some users report being unable to locate basic features after the new UI rollout.", "accent": "#3B0F70", "cv": 9, "ui": 9, "ai": 9, "ls": "2025-09", "rec": "live"},
     "uiregression":{"title": "Persistent UX regression",             "desc": "Complaints about the redesigned request-signature flow continued unbroken from Jan 2024 through Sep 2025, including a fresh wave in April 2025 when the classic UI was sunset. Tasks that took 5 minutes now take 20–30 across law firms, HR teams, and SMBs.", "accent": "#8C2981", "cv": 9, "ui": 8, "ai": 6, "ls": "2025-09", "rec": "live"},
-    "integration": {"title": "Integration brittleness & API friction","desc": "Webhooks auto-disable on repeated failures with no graceful recovery. Third-party cookie deprecation broke iFrame-embedded sign flows. G2 rates Acrobat Sign’s approval process at 8.5 vs. a competitor average of 9.4 — a gap that maps directly to workflow abandonment.", "accent": "#C73E4C", "cv": 7, "ui": 8, "ai": 8, "ls": "2025-07", "rec": "live"},
+    "integration": {"title": "Integration brittleness & API friction","desc": "Webhooks auto-disable on repeated failures with no graceful recovery. Third-party cookie deprecation broke iFrame-embedded sign flows. G2 rates Acrobat Sign's approval process at 8.5 vs. a competitor average of 9.4 — a gap that maps directly to workflow abandonment.", "accent": "#C73E4C", "cv": 7, "ui": 8, "ai": 8, "ls": "2025-07", "rec": "live"},
     "pricing":     {"title": "Pricing opacity & value perception",    "desc": "Overage billing at 4× standard rates with no warnings, and confusion across personal, educational, and business accounts tied to one email. Enterprise pricing requires contacting sales with no published rates.", "accent": "#E8692A", "cv": 8, "ui": 7, "ai": 4, "ls": "2025-04", "rec": "recent"},
     "mobile":      {"title": "Mobile app as a dead end",              "desc": "The iOS app supports basic signing but is not viable for document preparation or template management. Field-based users consistently cite this as a reason to evaluate DocuSign. App Store reviews call out the gap between mobile and desktop feature parity.", "accent": "#F59033", "cv": 7, "ui": 7, "ai": 7, "ls": "2025-03", "rec": "recent"},
     "recipient":   {"title": "Recipient-side signing friction",       "desc": "Signers report field placement errors, illegible signature rendering, and no guided signing flow. Documents pre-signed by another tool trigger “unsupported file type” errors. The receiving experience reflects directly on enterprise customers sending via Acrobat Sign.", "accent": "#F8C840", "cv": 8, "ui": 8, "ai": 7, "ls": "2024-11", "rec": "old"},
@@ -79,87 +75,37 @@ def score_text(text: str) -> dict[str, int]:
     }
 
 
-def fetch_raw(url: str) -> str:
-    req = Request(url, headers={"User-Agent": "acrobat-sign-scraper/1.0"})
-    with urlopen(req, timeout=20) as resp:
-        return resp.read().decode("utf-8", errors="replace")
-
-
-def extract_items_regex(text: str) -> list[tuple[str, str]]:
-    """Pull (title, body) pairs from RSS/Atom XML using regex, bypassing the parser."""
-    items = []
-    for block in re.findall(r'<(?:item|entry)[^>]*>(.*?)</(?:item|entry)>', text, re.DOTALL):
-        def grab(tag: str) -> str:
-            # prefer CDATA, fall back to raw text
-            m = re.search(rf'<{tag}[^>]*><!\[CDATA\[(.*?)\]\]></{tag}>', block, re.DOTALL)
-            if not m:
-                m = re.search(rf'<{tag}[^>]*>(.*?)</{tag}>', block, re.DOTALL)
-            return re.sub(r'<[^>]+>', ' ', m.group(1)) if m else ''
-        items.append((grab('title'), grab('description') or grab('summary') or grab('content')))
-    return items
-
-
-def scrape_adobe_rss(counts: dict) -> int:
+def scrape_reddit_public(counts: dict) -> int:
+    """Use Reddit's public JSON API — no credentials needed."""
     total = 0
-    for feed_url in ADOBE_RSS_FEEDS:
+    for sub in REDDIT_SUBREDDITS:
+        url = REDDIT_SEARCH_URL.format(sub=sub)
         try:
-            text = fetch_raw(feed_url)
+            req = Request(url, headers={"User-Agent": REDDIT_UA})
+            with urlopen(req, timeout=20) as resp:
+                data = json.loads(resp.read())
+        except HTTPError as e:
+            print(f"  [warn] Reddit {sub} returned HTTP {e.code} — skipping")
+            continue
         except Exception as exc:
-            print(f"  [warn] Fetch failed for {feed_url}: {exc}")
+            print(f"  [warn] Reddit {sub} failed: {exc}")
             continue
 
-        items = extract_items_regex(text)
-        if not items:
-            print(f"  [warn] No items found in {feed_url}")
-            print(f"  [debug] First 500 chars: {repr(text[:500])}")
-            continue
-
-        for title, body in items:
-            for theme_id, hits in score_text(f"{title} {body}").items():
+        posts = data.get("data", {}).get("children", [])
+        for post in posts:
+            d = post.get("data", {})
+            text = f"{d.get('title', '')} {d.get('selftext', '')}"
+            for theme_id, hits in score_text(text).items():
                 counts[theme_id] += hits
-        total += len(items)
-        print(f"  Parsed {len(items)} items from {feed_url}")
-
-    return total
-
-
-def scrape_reddit(counts: dict) -> int:
-    client_id = os.environ.get("REDDIT_CLIENT_ID")
-    client_secret = os.environ.get("REDDIT_CLIENT_SECRET")
-    if not client_id or not client_secret:
-        print("  [skip] REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET not set — skipping Reddit")
-        return 0
-
-    try:
-        import praw
-    except ImportError:
-        print("  [skip] praw not installed — skipping Reddit")
-        return 0
-
-    reddit = praw.Reddit(
-        client_id=client_id,
-        client_secret=client_secret,
-        user_agent=os.environ.get("REDDIT_USER_AGENT", "acrobat-sign-scraper/1.0"),
-    )
-
-    total = 0
-    for sub_name in ["sysadmin", "legaltech", "smallbusiness"]:
-        subreddit = reddit.subreddit(sub_name)
-        for post in subreddit.search("acrobat sign", limit=250, sort="new"):
-            body = f"{post.title} {post.selftext}"
-            post.comments.replace_more(limit=0)
-            for comment in list(post.comments)[:20]:
-                body += f" {comment.body}"
-            for theme_id, hits in score_text(body).items():
-                counts[theme_id] += hits
-            total += 1
+        total += len(posts)
+        print(f"  {sub}: {len(posts)} posts")
+        time.sleep(1)  # be polite to Reddit's servers
 
     return total
 
 
 def build_themes_json(counts: dict) -> list[dict]:
     total_hits = sum(counts.values()) or 1
-
     themes = []
     for theme_id in THEME_ORDER:
         meta = THEME_META[theme_id]
@@ -178,23 +124,18 @@ def build_themes_json(counts: dict) -> list[dict]:
             "ls": meta["ls"],
             "rec": meta["rec"],
         })
-
     return themes
 
 
 def main() -> None:
     counts: dict[str, int] = defaultdict(int)
 
-    print("Scraping Adobe Community RSS…")
-    adobe_items = scrape_adobe_rss(counts)
-    print(f"  Scanned {adobe_items} items")
-
-    print("Scraping Reddit…")
-    reddit_posts = scrape_reddit(counts)
-    print(f"  Scanned {reddit_posts} posts")
+    print("Scraping Reddit (public JSON API)…")
+    total = scrape_reddit_public(counts)
+    print(f"  Total posts scanned: {total}")
 
     if not any(counts.values()):
-        print("[warn] No hits found — themes.json not updated to avoid wiping manual estimates")
+        print("[warn] No keyword hits — themes.json not updated")
         return
 
     print("Theme hit counts:", dict(counts))
