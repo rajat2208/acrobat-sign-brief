@@ -214,6 +214,19 @@ function PlanGrid({ allThemes }) {
   )
 }
 
+function SectionHeader({ num, title, desc }) {
+  return (
+    <div className="section-hdr">
+      <div className="section-hdr-left">
+        <div className="section-pill">Section {num}</div>
+        <div className="section-title">{title}</div>
+        {desc && <div className="section-desc">{desc}</div>}
+      </div>
+      <div className="section-big-num">0{num}</div>
+    </div>
+  )
+}
+
 export default function App() {
   const [cur, setCur] = useState('all')
 
@@ -250,9 +263,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="eyebrow">Section 1</div>
-      <div className="sh">Customer pain landscape</div>
-      <div className="sd">All feedback is sourced exclusively from Acrobat Sign — not Acrobat or Adobe broadly.</div>
+      <SectionHeader num={1} title="Customer pain landscape" desc="All feedback is sourced exclusively from Acrobat Sign — not Acrobat or Adobe broadly." />
 
       <div className="src-box">
         <div className="src-box-lbl">Source universe</div>
@@ -295,18 +306,10 @@ export default function App() {
 
       <ThemeCards allThemes={themesData} visibleThemes={visibleThemes} />
 
-      <div className="divider" />
-
-      <div className="eyebrow">Section 2</div>
-      <div className="sh">Prioritization</div>
-      <div className="sd">Ranked by subjective judgment based on source review — the score is a directional pulse-check, not a precise measurement.</div>
+      <SectionHeader num={2} title="Prioritization" desc="Ranked by subjective judgment based on source review — the score is a directional pulse-check, not a precise measurement." />
       <PrioTable themes={visibleThemes} />
 
-      <div className="divider" />
-
-      <div className="eyebrow">Section 3</div>
-      <div className="sh">First 90 days</div>
-      <div className="sd">Actions derived directly from the themes above. Each card is color-coded to its target theme. Standard onboarding activities — team introductions, tooling access, process ramp-up — run in parallel and are not listed here.</div>
+      <SectionHeader num={3} title="First 90 days" desc="Actions derived directly from the themes above. Each card is color-coded to its target theme. Standard onboarding activities — team introductions, tooling access, process ramp-up — run in parallel and are not listed here." />
 
       <div className="plan-legend">
         <span className="pl-lbl">Color key:</span>
