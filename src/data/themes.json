@@ -1,0 +1,80 @@
+[
+  {
+    "id": "workflow",
+    "title": "Workflow configuration complexity",
+    "desc": "Setting up multi-signer routing, conditional fields, and template logic is the most-cited pain point across all sources. Enterprise admins struggle to create reusable templates, and some users report being unable to locate basic features after the new UI rollout.",
+    "vol": 28,
+    "n": null,
+    "accent": "#3B0F70",
+    "cv": 9,
+    "ui": 9,
+    "ai": 9,
+    "ls": "2025-09",
+    "rec": "live"
+  },
+  {
+    "id": "uiregression",
+    "title": "Persistent UX regression",
+    "desc": "Complaints about the redesigned request-signature flow continued unbroken from Jan 2024 through Sep 2025, including a fresh wave in April 2025 when the classic UI was sunset. Tasks that took 5 minutes now take 20–30 across law firms, HR teams, and SMBs.",
+    "vol": 24,
+    "n": null,
+    "accent": "#8C2981",
+    "cv": 9,
+    "ui": 8,
+    "ai": 6,
+    "ls": "2025-09",
+    "rec": "live"
+  },
+  {
+    "id": "integration",
+    "title": "Integration brittleness & API friction",
+    "desc": "Webhooks auto-disable on repeated failures with no graceful recovery. Third-party cookie deprecation broke iFrame-embedded sign flows. G2 rates Acrobat Sign's approval process at 8.5 vs. a competitor average of 9.4 — a gap that maps directly to workflow abandonment.",
+    "vol": 16,
+    "n": null,
+    "accent": "#C73E4C",
+    "cv": 7,
+    "ui": 8,
+    "ai": 8,
+    "ls": "2025-07",
+    "rec": "live"
+  },
+  {
+    "id": "pricing",
+    "title": "Pricing opacity & value perception",
+    "desc": "Overage billing at 4× standard rates with no warnings, and confusion across personal, educational, and business accounts tied to one email. Enterprise pricing requires contacting sales with no published rates.",
+    "vol": 14,
+    "n": null,
+    "accent": "#E8692A",
+    "cv": 8,
+    "ui": 7,
+    "ai": 4,
+    "ls": "2025-04",
+    "rec": "recent"
+  },
+  {
+    "id": "mobile",
+    "title": "Mobile app as a dead end",
+    "desc": "The iOS app supports basic signing but is not viable for document preparation or template management. Field-based users consistently cite this as a reason to evaluate DocuSign. App Store reviews call out the gap between mobile and desktop feature parity.",
+    "vol": 10,
+    "n": null,
+    "accent": "#F59033",
+    "cv": 7,
+    "ui": 7,
+    "ai": 7,
+    "ls": "2025-03",
+    "rec": "recent"
+  },
+  {
+    "id": "recipient",
+    "title": "Recipient-side signing friction",
+    "desc": "Signers report field placement errors, illegible signature rendering, and no guided signing flow. Documents pre-signed by another tool trigger \"unsupported file type\" errors. The receiving experience reflects directly on enterprise customers sending via Acrobat Sign.",
+    "vol": 8,
+    "n": null,
+    "accent": "#F8C840",
+    "cv": 8,
+    "ui": 8,
+    "ai": 7,
+    "ls": "2024-11",
+    "rec": "old"
+  }
+]
